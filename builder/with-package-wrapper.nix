@@ -34,35 +34,43 @@ in runCommand "${ghc.name}-with-${package.identifier.name}" {
     ${lndir}/bin/lndir -silent ${ghc} $out
 
     # ...and replace package database with the one from target package config.
-    rm -rf ${libDir}
-    mkdir -p ${libDir}
+    rm -rf ${libDir}/*/
     ln -s ${configFiles}/package.conf.d ${packageCfgDir}
 
     # Wrap compiler executables with correct env variables.
     # The NIX_ variables are used by the patched Paths_ghc module.
-    # The GHC_ENVIRONMENT variable forces ghc to use the build
-    # dependencies of the component.
 
-    for prg in ${ghcCommand} ${ghcCommand}i ${ghcCommand}-${ghc.version} ${ghcCommand}i-${ghc.version} runghc runhaskell; do
+    for prg in ${ghcCommand} ${ghcCommand}i ${ghcCommand}-${ghc.version} ${ghcCommand}i-${ghc.version}; do
       if [[ -x "${ghc}/bin/$prg" ]]; then
         rm -f $out/bin/$prg
         makeWrapper ${ghc}/bin/$prg $out/bin/$prg                           \
+          --add-flags '"-B$NIX_${ghcCommandCaps}_LIBDIR"'                   \
           --set "NIX_${ghcCommandCaps}"        "$out/bin/${ghcCommand}"     \
           --set "NIX_${ghcCommandCaps}PKG"     "$out/bin/${ghcCommand}-pkg" \
           --set "NIX_${ghcCommandCaps}_DOCDIR" "${docDir}"                  \
-          --set "NIX_${ghcCommandCaps}_LIBDIR" "${libDir}"                  \
-          --set "${ghcCommandCaps}_ENVIRONMENT" "${configFiles}/ghc-environment"
+          --set "NIX_${ghcCommandCaps}_LIBDIR" "${libDir}"
+      fi
+    done
+
+    for prg in runghc runhaskell; do
+      if [[ -x "${ghc}/bin/$prg" ]]; then
+        rm -f $out/bin/$prg
+        makeWrapper ${ghc}/bin/$prg $out/bin/$prg                           \
+          --add-flags "-f $out/bin/${ghcCommand}"                           \
+          --set "NIX_${ghcCommandCaps}"        "$out/bin/${ghcCommand}"     \
+          --set "NIX_${ghcCommandCaps}PKG"     "$out/bin/${ghcCommand}-pkg" \
+          --set "NIX_${ghcCommandCaps}_DOCDIR" "${docDir}"                  \
+          --set "NIX_${ghcCommandCaps}_LIBDIR" "${libDir}"
       fi
     done
 
     # Point ghc-pkg to the package database of the component using the
-    # GHC_PACKAGE_PATH variable.
+    # --global-package-db flag.
 
     for prg in ${ghcCommand}-pkg ${ghcCommand}-pkg-${ghc.version}; do
       if [[ -x "${ghc}/bin/$prg" ]]; then
         rm -f $out/bin/$prg
-        makeWrapper ${ghc}/bin/$prg $out/bin/$prg \
-          --set "${ghcCommandCaps}_PACKAGE_PATH" "${configFiles}/package.conf.d"
+        makeWrapper ${ghc}/bin/$prg $out/bin/$prg --add-flags "--global-package-db=${packageCfgDir}"
       fi
     done
 
