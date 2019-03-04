@@ -83,7 +83,7 @@ let
   pkgSet = haskell.mkPkgSet {
     inherit pkgs;
     pkg-def = my-pkgs.pkg-def;
-    pkg-def-overlays = [
+    pkg-def-extras = [
       # this overlay will provide additional packages
       # ontop of the package set.  E.g. extra-deps
       # for stack packages. or local packages for

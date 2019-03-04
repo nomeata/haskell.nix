@@ -45,7 +45,7 @@ let
 
   pkgSet = haskell.mkStackPkgSet {
     stack-pkgs = import ./pkgs.nix;
-    pkg-def-overlays = [];
+    pkg-def-extras = [];
     modules = [];
   };
 
