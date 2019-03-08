@@ -169,7 +169,8 @@ let
       ++ lib.optional (deadCodeElimination && stdenv.hostPlatform.isLinux) "--enable-split-sections"
       ++ lib.optional (static) "--enable-static"
       ++ lib.optionals (stdenv.hostPlatform != stdenv.buildPlatform) (
-        map (arg: "--hsc2hs-option=" + arg) ["--cross-compile" "--via-asm"]
+        [ "--hsc2hs-option=--cross-compile" ]
+	++ lib.optional (stdenv.hostPlatform.isWindows) "--hsc2hs-option=--via-asm"
         ++ lib.optional (package.buildType == "Configure") "--configure-option=--host=${stdenv.hostPlatform.config}" )
       ++ component.configureFlags
   );
